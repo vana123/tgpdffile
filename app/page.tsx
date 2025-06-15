@@ -14,6 +14,7 @@ export default function Home() {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     // Initialize Telegram WebApp
@@ -27,31 +28,42 @@ export default function Home() {
     
     if (fileIdParam) {
       setFileId(fileIdParam);
+      setLoading(true);
+      
       // Get file path from Telegram API
       fetch(`https://api.telegram.org/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/getFile?file_id=${fileIdParam}`)
         .then(response => response.json())
         .then(data => {
-          if (data.ok) {
+          console.log('Telegram API response:', data); // Debug log
+          
+          if (data.ok && data.result && data.result.file_path) {
             const filePath = data.result.file_path;
-            setPdfUrl(`https://api.telegram.org/file/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/${filePath}`);
+            const fileUrl = `https://api.telegram.org/file/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/${filePath}`;
+            console.log('Generated file URL:', fileUrl); // Debug log
+            setPdfUrl(fileUrl);
           } else {
-            setError('Помилка отримання файлу');
+            console.error('Invalid API response:', data); // Debug log
+            setError('Помилка отримання файлу: ' + (data.description || 'Невідома помилка'));
           }
         })
         .catch(err => {
-          setError('Помилка при спробі отримати файл');
-          console.error('Error fetching file:', err);
+          console.error('Error fetching file:', err); // Debug log
+          setError('Помилка при спробі отримати файл: ' + err.message);
+        })
+        .finally(() => {
+          setLoading(false);
         });
     }
   }, []);
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
+    console.log('PDF loaded successfully, pages:', numPages); // Debug log
     setNumPages(numPages);
   }
 
   function onDocumentLoadError(error: Error) {
-    setError('Помилка завантаження PDF файлу');
-    console.error('Error loading PDF:', error);
+    console.error('Error loading PDF:', error); // Debug log
+    setError('Помилка завантаження PDF файлу: ' + error.message);
   }
 
   return (
@@ -59,7 +71,11 @@ export default function Home() {
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-4">PDF Viewer</h1>
         
-        {error ? (
+        {loading ? (
+          <div className="text-center p-4">
+            Завантаження...
+          </div>
+        ) : error ? (
           <div className="text-center text-red-500 p-4 border border-red-500 rounded">
             {error}
           </div>
@@ -70,11 +86,21 @@ export default function Home() {
               onLoadSuccess={onDocumentLoadSuccess}
               onLoadError={onDocumentLoadError}
               className="flex justify-center"
+              loading={
+                <div className="text-center p-4">
+                  Завантаження PDF...
+                </div>
+              }
             >
               <Page 
                 pageNumber={pageNumber} 
                 width={Math.min(window.innerWidth - 32, 800)}
                 className="shadow-lg"
+                loading={
+                  <div className="text-center p-4">
+                    Завантаження сторінки...
+                  </div>
+                }
               />
             </Document>
             
