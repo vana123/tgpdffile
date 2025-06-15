@@ -6,7 +6,10 @@ import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
 
 // Set up PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.js',
+  import.meta.url,
+).toString();
 
 export default function Home() {
   const [fileId, setFileId] = useState<string>('');
@@ -34,20 +37,20 @@ export default function Home() {
       fetch(`https://api.telegram.org/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/getFile?file_id=${fileIdParam}`)
         .then(response => response.json())
         .then(data => {
-          console.log('Telegram API response:', data); // Debug log
+          console.log('Telegram API response:', data);
           
           if (data.ok && data.result && data.result.file_path) {
             const filePath = data.result.file_path;
             const fileUrl = `https://api.telegram.org/file/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/${filePath}`;
-            console.log('Generated file URL:', fileUrl); // Debug log
+            console.log('Generated file URL:', fileUrl);
             setPdfUrl(fileUrl);
           } else {
-            console.error('Invalid API response:', data); // Debug log
+            console.error('Invalid API response:', data);
             setError('Помилка отримання файлу: ' + (data.description || 'Невідома помилка'));
           }
         })
         .catch(err => {
-          console.error('Error fetching file:', err); // Debug log
+          console.error('Error fetching file:', err);
           setError('Помилка при спробі отримати файл: ' + err.message);
         })
         .finally(() => {
@@ -57,12 +60,12 @@ export default function Home() {
   }, []);
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
-    console.log('PDF loaded successfully, pages:', numPages); // Debug log
+    console.log('PDF loaded successfully, pages:', numPages);
     setNumPages(numPages);
   }
 
   function onDocumentLoadError(error: Error) {
-    console.error('Error loading PDF:', error); // Debug log
+    console.error('Error loading PDF:', error);
     setError('Помилка завантаження PDF файлу: ' + error.message);
   }
 
