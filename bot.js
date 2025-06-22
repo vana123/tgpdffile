@@ -12,11 +12,12 @@ bot.command('start', (ctx) => {
 bot.on('document', async (ctx) => {
     const file = ctx.message.document;
     
+    // Відповідаємо file_id незалежно від типу документа
+    await ctx.reply(`file_id: ${file.file_id}`);
+
     // Перевіряємо чи це PDF
     if (file.mime_type === 'application/pdf') {
-        const fileId = file.file_id;
-        const webAppUrl = `${process.env.WEBAPP_URL}?file_id=${fileId}`;
-        
+        const webAppUrl = `${process.env.WEBAPP_URL}?file_id=${file.file_id}`;
         await ctx.reply('PDF файл отримано! Натисніть кнопку нижче, щоб переглянути його:', {
             reply_markup: {
                 inline_keyboard: [[

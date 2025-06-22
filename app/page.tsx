@@ -16,6 +16,7 @@ declare global {
 
 export default function Home() {
   const [pdfUrl, setPdfUrl] = useState('');
+  const [manualFileId, setManualFileId] = useState('');
 
   useEffect(() => {
     // Ініціалізація Telegram WebApp
@@ -29,16 +30,46 @@ export default function Home() {
     const fileId = urlParams.get('file_id');
     
     if (fileId) {
-      // Формуємо URL для отримання файлу з Telegram
-      const fileUrl = `https://api.telegram.org/file/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/${fileId}`;
-      setPdfUrl(fileUrl);
+      fetchFilePathAndSetUrl(fileId);
     }
   }, []);
+
+  const fetchFilePathAndSetUrl = async (fileId: string) => {
+    try {
+      const fileRes = await fetch(`/api/proxy-pdf?file_id=${fileId}`);
+      if (fileRes.ok) {
+        const blob = await fileRes.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        setPdfUrl(blobUrl);
+      } else {
+        setPdfUrl('');
+      }
+    } catch {
+      setPdfUrl('');
+    }
+  };
+
+  const handleManualFileId = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (manualFileId) {
+      fetchFilePathAndSetUrl(manualFileId);
+    }
+  };
 
   return (
     <div className="min-h-screen p-4">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-4">PDF Viewer</h1>
+        <form onSubmit={handleManualFileId} className="mb-4 flex gap-2">
+          <input
+            type="text"
+            placeholder="Введіть file_id..."
+            value={manualFileId}
+            onChange={e => setManualFileId(e.target.value)}
+            className="border rounded px-2 py-1 flex-1"
+          />
+          <button type="submit" className="bg-blue-500 text-white px-4 py-1 rounded">Показати</button>
+        </form>
         
         {pdfUrl ? (
           <div className="w-full h-[800px] border border-gray-200 rounded-lg overflow-hidden">
